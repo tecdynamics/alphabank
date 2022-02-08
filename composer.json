@@ -1,0 +1,10 @@
+{
+    "name": "tecdynamics/alphabank",
+    "type": "package",
+    "description": "Alphabank PHP Library",
+    "keywords": [
+        "alphabank",
+        "payment processing",
+        "api"
+    ]
+}

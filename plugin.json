@@ -1,0 +1,10 @@
+{
+    "name": "AlphaBank Payment Gateway",
+    "namespace": "Botble\\Alphabank\\",
+    "provider": "Botble\\Alphabank\\Providers\\AlphabankServiceProvider",
+    "author": "Tec-Dynamics Technologies",
+    "url": "https://tecdynamics.co.uk",
+    "version": "1.0",
+    "description": "Alphabank payment gateway integration",
+    "require": ["payment"]
+}
