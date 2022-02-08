@@ -49,7 +49,7 @@
     <input type="hidden" name="var1" value="<?php echo $form_data_array['var1']; ?>"/>
     <input type="hidden" name="digest"
            value="<?php echo $paymentObject->validate_eb_PayMerchantKey_field($form_data_array); ?>"/>
-    <button type="submit">Send</button>
+{{--    <button type="submit">Send</button>--}}
 </form>
 
                     <div class="col-12 text-center p-2 ">
@@ -66,8 +66,8 @@
         <script>
             (function ($) {
                 'use strict';
-                setTimeout(function () {
-                    $('form#paymentform').submit();
+               setTimeout(function () {
+                   $('form#paymentform').submit();
                 }, 2000);
 
 

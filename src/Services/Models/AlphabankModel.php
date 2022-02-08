@@ -2,7 +2,7 @@
 namespace Botble\Alphabank\Services\Models;
 use Illuminate\Support\Arr;
 use OrderHelper;
-
+use Botble\Ecommerce\Models\Order;
 /**
  *  ****************************************************************
  *  *** DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER. ***
@@ -182,7 +182,8 @@ class AlphabankModel {
      */
     public static function instalmentsisActive() {
         $enable = get_payment_setting('installments', ALPHABANK_PAYMENT_METHOD_NAME, 0);
-        return !!((int)$enable == 1);
+
+        return ((int)$enable > 1);
     }
 
     /**
@@ -207,14 +208,14 @@ class AlphabankModel {
         } else {
             $total = $this->params['total'] ?? '0.0';
         }
-
-        if (self::instalmentsisActive() && isset($this->params['extInstallmentperiod']) && $this->params['extInstallmentperiod'] > 1) {
+        if (self::instalmentsisActive() && isset($order['installments']) && $order['installments'] > 1) {
             $extInstallmentoffset = 0;
-            if ((int)request()->get("alphabankinstallments") > $Alphabank_installments) {
+            if ((int)$order["installments"] > $Alphabank_installments) {
                  $extInstallmentperiod = (int)$Alphabank_installments;
              } else {
-                $extInstallmentperiod = (int)request()->get("alphabankinstallments");
+                $extInstallmentperiod = (int)$order["installments"];
              }
+             \DB::table('ec_orders')->where('id', '=', Arr::get($order, 'created_order_id', 0))->update(['installments'=> $extInstallmentperiod]);
             $form_data_array = array(
                 'version' => self::$version,
                 'mid' => $Alphabank_key,
@@ -232,9 +233,9 @@ class AlphabankModel {
                 'billAddress' => $this->params['address'] ?? 'N/A',
                 'trType' => $this->getTransactionType(),
                 'extInstallmentoffset' => $extInstallmentoffset,
-                'extInstallmentperiod' => $$extInstallmentperiod,
-                'confirmUrl' => url($this->redirect_bank_response_url() . "/?gateway=" . self::getName() . "&result=success&id=" . Arr::get($order, 'created_order_id', 0)),
-                'cancelUrl' => url($this->redirect_bank_response_url() . "/?gateway=" . self::getName() . "&result=failure&id=" . Arr::get($order, 'created_order_id', 0)),
+                'extInstallmentperiod' => $extInstallmentperiod,
+                'confirmUrl' => url($this->redirect_bank_response_url() . "/?gateway=" . self::getName() . "&result=success"),
+                'cancelUrl' => url($this->redirect_bank_response_url() . "/?gateway=" . self::getName() . "&result=failure" ),
                 'var1' => Arr::get($order, 'created_order_id', 0)
             );
         } else {

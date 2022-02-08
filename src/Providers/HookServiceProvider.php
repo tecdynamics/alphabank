@@ -2,9 +2,10 @@
 
 namespace Botble\Alphabank\Providers;
 
+use Assets;
 use Botble\Alphabank\Services\Gateways\AlphabankPaymentService;
+use Botble\Alphabank\Services\Models\AlphabankModel;
 use Botble\Payment\Enums\PaymentMethodEnum;
-use Botble\Payment\Enums\PaymentStatusEnum;
 use Html;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -12,18 +13,17 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use OrderHelper;
 use Throwable;
-use Assets;
 
 class HookServiceProvider extends ServiceProvider {
 
 
     public function boot() {
-        add_filter(PAYMENT_FILTER_ADDITIONAL_PAYMENT_METHODS, [$this, 'registerAlphabankMethod'], 19, 2);
-        $this->app->booted(function () {
-            add_filter(PAYMENT_FILTER_AFTER_POST_CHECKOUT, [$this, 'checkoutWithAlphabank'], 19, 2);
-        });
+        add_filter(PAYMENT_FILTER_ADDITIONAL_PAYMENT_METHODS, [$this, 'registerAlphabankMethod'], 99, 2);
+//        $this->app->booted(function () {
+//            add_filter(PAYMENT_FILTER_AFTER_POST_CHECKOUT, [$this, 'checkoutWithAlphabank'], 99, 2);
+//      });
 
-        add_filter(PAYMENT_METHODS_SETTINGS_PAGE, [$this, 'addPaymentSettings'], 93);
+        add_filter(PAYMENT_METHODS_SETTINGS_PAGE, [$this, 'addPaymentSettings'], 30);
 
         add_filter(BASE_FILTER_ENUM_ARRAY, function ($values, $class) {
             if ($class == PaymentMethodEnum::class) {
@@ -31,7 +31,7 @@ class HookServiceProvider extends ServiceProvider {
             }
 
             return $values;
-        }, 29, 2);
+        }, 30, 2);
 
         add_filter(BASE_FILTER_ENUM_LABEL, function ($value, $class) {
             if ($class == PaymentMethodEnum::class && $value == ALPHABANK_PAYMENT_METHOD_NAME) {
@@ -39,7 +39,7 @@ class HookServiceProvider extends ServiceProvider {
             }
 
             return $value;
-        }, 29, 2);
+        }, 30, 2);
 
         add_filter(BASE_FILTER_ENUM_HTML, function ($value, $class) {
             if ($class == PaymentMethodEnum::class && $value == ALPHABANK_PAYMENT_METHOD_NAME) {
@@ -49,7 +49,7 @@ class HookServiceProvider extends ServiceProvider {
             }
 
             return $value;
-        }, 29, 2);
+        }, 30, 2);
 
         add_filter(PAYMENT_FILTER_GET_SERVICE_CLASS, function ($data, $value) {
             if ($value == ALPHABANK_PAYMENT_METHOD_NAME) {
@@ -60,7 +60,7 @@ class HookServiceProvider extends ServiceProvider {
         }, 20, 2);
 
         add_filter(PAYMENT_FILTER_PAYMENT_INFO_DETAIL, function ($data, $payment) {
-            if ($payment->payment_channel == ALPHABANK_PAYMENT_METHOD_NAME) {
+              if ($payment->payment_channel == ALPHABANK_PAYMENT_METHOD_NAME) {
                 $paymentService = new AlphabankPaymentService;
                 $paymentDetail = $paymentService->getPaymentDetails($payment->charge_id);
 
@@ -96,9 +96,49 @@ class HookServiceProvider extends ServiceProvider {
      * @throws Throwable
      */
     public function addPaymentSettings($settings) {
-        return $settings . view('plugins/alphabank::settings')->render();
+          return $settings . view('plugins/alphabank::settings')->render();
     }
-
+/*array:18 [▼
+  "promotion_discount_amount" => 0
+  "created_order" => true
+  "created_order_id" => 60
+  "created_order_product" => Illuminate\Support\Carbon @1644325742 {#3219 ▶}
+  "shipping_method" => "default"
+  "shipping_option" => "2"
+  "shipping_amount" => "20.00"
+  "name" => "Michail Fragkiskos"
+  "email" => "support@tecdynamics.co.uk"
+  "phone" => "+447507745608"
+  "country" => "GB"
+  "state" => "Berkshire"
+  "city" => "READING"
+  "address" => "25 Dwyer Road"
+  "created_order_address" => true
+  "created_order_address_id" => 57
+  "order_id" => 60
+  "marketplace" => array:2 [▶]
+]
+array:19 [▼
+  "name" => "Michail Fragkiskos"
+  "email" => "support@tecdynamics.co.uk"
+  "phone" => "+447507745608"
+  "country" => "GB"
+  "state" => "Berkshire"
+  "city" => "READING"
+  "created_order" => Illuminate\Support\Carbon @1644326496 {#3209 ▶}
+  "created_order_id" => 66
+  "created_order_product" => Illuminate\Support\Carbon @1644326496 {#3209 ▶}
+  "coupon_discount_amount" => 0
+  "applied_coupon_code" => null
+  "is_free_shipping" => false
+  "promotion_discount_amount" => 0
+  "shipping_method" => "default"
+  "shipping_option" => 1
+  "shipping_amount" => "0.00"
+  "shipping" => array:1 [▶]
+  "default_shipping_method" => "default"
+  "default_shipping_option" => 1
+]*/
 
     /**
      * @param string $html
@@ -108,9 +148,10 @@ class HookServiceProvider extends ServiceProvider {
     public function registerAlphabankMethod($html, $data) {
         $order = OrderHelper::getOrderSessionData();
         $marketplace = $order['marketplace'] ?? false;
-        if (!$marketplace) return $html;
-        $marketplace = reset($marketplace);
-
+        if ($marketplace) {
+            $marketplace = reset($marketplace);
+        }
+        Assets::addScripts('vendor/core/plugins/alphabank/js/alphabank.js');
         $Alphabank_key = get_payment_setting('client_id', ALPHABANK_PAYMENT_METHOD_NAME);
         $Alphabank_secret = get_payment_setting('secret', ALPHABANK_PAYMENT_METHOD_NAME);
 
@@ -118,10 +159,13 @@ class HookServiceProvider extends ServiceProvider {
             return $html;
         }
         $data['errorMessage'] = null;
-        $data['orderId'] = Arr::get($marketplace, 'created_order_id', 0);
+        if (!$marketplace) {
+            $data['orderId'] = Arr::get($order, 'order_id', 0);
+        } else {
+            $data['orderId'] = Arr::get($marketplace, 'created_order_id', 0);
+        }
+        $data['errorMessage'] = null;
         $data['paymentId'] = Str::random(20);
-      Assets::addScriptsDirectly(['vendor/core/plugins/alphabank/public/js/alphabank.js' ]);
-
         return $html . view('plugins/alphabank::paymentpage', $data)->render();
     }
 
@@ -131,24 +175,39 @@ class HookServiceProvider extends ServiceProvider {
      * @param array $data
      * @return array
      */
-    public function checkoutWithAlphabank(array $data, Request $request) {
+    public function checkoutWithAlphabank( $data, Request $request) {
+         $alphabankinstallments= $request->input('alphabankinstallments',0);
         $order = OrderHelper::getOrderSessionData();
-        $marketplace = $order['marketplace'] ?? false;
 
-        if (!$marketplace) {
-            $data['message'] = 'No Valid Order Provided1';
+        $data=(array)$data;
+        $order['installments'] = $alphabankinstallments;
+        dd($order, OrderHelper::setOrderSessionData(OrderHelper::getOrderSessionToken(), $order));
+        if (!$order) {
+            $data['message'] = 'No Valid Order Provided';
             $data['error'] = true;
             return $data;
         }
-        $marketplace = reset($marketplace);
+        $marketplace = $order['marketplace'] ?? false;
+        if ($marketplace) {
+            $marketplace = reset($marketplace);
+        }
 
+        $data['installments'] = $alphabankinstallments;
         $data['paymentObject'] = $this;
         $data['status'] = 'pending';
         $data['formname'] = OrderHelper::getOrderSessionToken();
-        $data['form_data_array'] = $this->createForm($marketplace);
+        $AlphabankModel= new AlphabankModel();
+        if ($marketplace) {
+            $data['orderId'] = Arr::get($marketplace, 'created_order_id', 0);
+            $data['form_data_array'] = $AlphabankModel->createForm($marketplace);
+        } else {
+            $data['orderId'] = Arr::get($order, 'order_id', 0);
+            $data['form_data_array'] = $AlphabankModel->createForm($order);
+        }
+
+
         $data['errorMessage'] = null;
-        $data['orderId'] = Arr::get($marketplace, 'created_order_id', 0);
-        $data['message'] = 'No Valid Order Provided';
+        $data['message'] = 'Redirecting to Payment gateway';
         $data['error'] = false;
         return $data;
     }

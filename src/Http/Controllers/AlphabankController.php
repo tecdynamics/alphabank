@@ -17,35 +17,46 @@ use OrderHelper;
 use Throwable;
 
 class AlphabankController extends BaseController {
+    /**
+     * @Function   paymentredirect
+     * @param Request $request
+     * @param BaseHttpResponse $response
+     * @Author    : Michail Fragkiskos
+     * @Created at: 08/02/2022 at 19:06
+     * @param Request $request
+     * @param BaseHttpResponse $response
+     * @return array|string
+     */
     public function paymentredirect(Request $request, BaseHttpResponse $response) {
         $order = OrderHelper::getOrderSessionData();
-        $marketplace = $order['marketplace'] ?? false;
-
-        if (!$marketplace) {
+        $order['installments'] = $request->input(['alphabankinstallments'],0);
+        $order = OrderHelper::setOrderSessionData(OrderHelper::getOrderSessionToken(), $order);
+        if (!$order) {
             $data['message'] = 'No Valid Order Provided';
             $data['error'] = true;
             return $data;
         }
+        $marketplace = $order['marketplace'] ?? false;
+        if ($marketplace) {
+            $marketplace = reset($marketplace);
+        }else{
+            $marketplace= $order;
+        }
         $AlphabankModel = new AlphabankModel();
-        $marketplace = reset($marketplace);
-
         $data['paymentObject'] = $AlphabankModel;
         $data['status'] = 'pending';
         $data['formname'] = OrderHelper::getOrderSessionToken();
-        $data['form_data_array'] = $AlphabankModel->createForm($marketplace);
+        $AlphabankModel = new AlphabankModel();
+        if ($marketplace) {
+            $data['orderId'] = Arr::get($marketplace, 'created_order_id', 0);
+            $data['form_data_array'] = $AlphabankModel->createForm($marketplace);
+        } else {
+            $data['orderId'] = Arr::get($order, 'order_id', 0);
+            $data['form_data_array'] = $AlphabankModel->createForm($order);
+        }
         $data['errorMessage'] = null;
-        $data['orderId'] = Arr::get($marketplace, 'created_order_id', 0);
 
-        Assets::addStyles(['datetimepicker'])
-            ->addScripts([
-                'moment',
-                'datetimepicker',
-                'jquery-ui',
-                'input-mask',
-                'blockui',
-            ])
-            ->addStylesDirectly(['css/vendors/normalize.css'])
-            ->addStylesDirectly(['css/vendors/bootstrap.min.css'])
+        Assets::addStylesDirectly(['css/vendors/bootstrap.min.css'])
             ->addStylesDirectly(['css/vendors/uicons-regular-straight.css'])
             ->addScriptsDirectly([
                 'vendor/core/plugins/ecommerce/js/edit-product.js',
@@ -97,8 +108,8 @@ array:3 [▼
   "result" => "success"
   "id" => "51"
 ]*/
-          $data = $_POST;
-          $getData= $_GET;
+          $data = $_POST??[];
+          $getData= $_GET??[];
 //        $getData = [
 //            "gateway" => "Alphabank",
 //            "result" => "success",
@@ -120,11 +131,10 @@ array:3 [▼
         /*
          5188340000000011
          * */
-        // dd( $request);
         try {
             $AlphabankModel = new AlphabankModel();
             //check if is success or not the transaction;
-            if (!isset($getData['result']) || $data['status'] != $AlphabankModel::_AUTHORIZED) {
+            if (!isset($getData['result'], $data['status']) || !in_array(strtoupper($data['status']), [$AlphabankModel::_CAPTURED, $AlphabankModel::_AUTHORIZED])) {
                 return $response
                     ->setError()
                     ->setNextUrl(PaymentHelper::getCancelURL())
@@ -138,29 +148,40 @@ array:3 [▼
                     ->setMessage(__('Payment failed!'));
             }
 
-
+            $orderInfo = explode('at', $data['orderid']);
+            $order_id = (int)reset($orderInfo);
             $status = PaymentStatusEnum::PENDING;
 
-            if (in_array($data['status'], [$AlphabankModel::_CAPTURED, $AlphabankModel::_AUTHORIZED])) {
+            if (in_array(strtoupper($data['status']), [$AlphabankModel::_CAPTURED, $AlphabankModel::_AUTHORIZED])) {
                 $status = PaymentStatusEnum::COMPLETED;
             }
 
-            $order = Order::Where('id', '=', (int)$getData['id'])->first();
-
+            $order = Order::Where('id', '=', (int)$order_id)->first();
+            //set historical data
+            \DB::table('ec_order_histories')->insert([
+                'action' => 'confirm_payment',
+                'order_id' => (int)$order->id,
+                'user_id' => (int)$order->user->id,
+                'description' => $data['status'] ?? 'AlphaBank Checkout Error',
+                'extras' => $data['paymentRef'],
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
             do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
                 'amount' => $data['paymentTotal'] ?? 0,
                 'currency' => $data['currency'] ?? 'EUR',
                 'charge_id' => $data['txId'] ?? $data['orderid'],
                 'payment_channel' => ALPHABANK_PAYMENT_METHOD_NAME,
                 'status' => $status,
-                'customer_id' => (int)$order->user->id,
+                'customer_id' =>(int) $order->user->id??0,
                 'customer_type' => Customer::class,
                 'payment_type' => $data['payMethod'] ?? 'Card',
-                'order_id' =>  $order->id,
+                'order_id' => (int) $order->id,
             ]);
-//dd($order->user,$order);
-            return $response
-                ->setNextUrl(PaymentHelper::getRedirectURL($order->token))
+
+            return
+            $response
+                ->setNextUrl(route('public.checkout.success', $order->token))
                 ->setMessage(__('Checkout successfully!'));
 
         }

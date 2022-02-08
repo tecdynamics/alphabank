@@ -1,3 +1,5 @@
+@php dd(get_payment_setting('status', ALPHABANK_PAYMENT_METHOD_NAME),ALPHABANK_PAYMENT_METHOD_NAME);
+@endphp
 @if (get_payment_setting('status', ALPHABANK_PAYMENT_METHOD_NAME) == 1)
     <li class="list-group-item">
         <input class="magic-radio js_payment_method" type="radio" name="payment_method" id="payment_{{ ALPHABANK_PAYMENT_METHOD_NAME }}"

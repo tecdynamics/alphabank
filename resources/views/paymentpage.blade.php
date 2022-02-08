@@ -1,13 +1,9 @@
 @php
-     $totalInstalments =   get_payment_setting('installments', ALPHABANK_PAYMENT_METHOD_NAME);
+     $totalInstalments = get_payment_setting('installments', ALPHABANK_PAYMENT_METHOD_NAME);
 @endphp
-{{--@include('plugins/aplhabank::js.alphabank.js')--}}
-<script>
-    function alphabankinstallments(e) {
-        alert(e.target)
-    }
-</script>
+
 <li class="list-group-item">
+    <script src="/vendor/core/plugins/alphabank/js/alphabank.js"></script>
     <input class="magic-radio js_payment_method" type="radio" name="payment_method"
            id="payment_{{ ALPHABANK_PAYMENT_METHOD_NAME }}"
            value="{{ ALPHABANK_PAYMENT_METHOD_NAME }}" data-bs-toggle="collapse"

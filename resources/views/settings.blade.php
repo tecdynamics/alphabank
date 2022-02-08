@@ -20,7 +20,7 @@
             <div class="float-start" style="margin-top: 5px;">
                 <div class="payment-name-label-group @if ($alphabankStatus== 0) hidden @endif">
                     <span class="payment-note v-a-t">{{ clean(trans('plugins/alphabank::alphabank.use')) }}:</span> <label
-                        class="ws-nm inline-display method-name-label">{{ setting('payment_Alphabank_name') }}</label>
+                        class="ws-nm inline-display method-name-label">{{ setting('payment_alphabank_name') }}</label>
                 </div>
             </div>
             <div class="float-end">
@@ -64,23 +64,23 @@
                             <label class="text-title-field"
                                    for="alphabank_name">{{ trans('plugins/payment::payment.method_name') }}</label>
                             <input type="text" class="next-input input-name"
-                                   name="payment_Alphabank_name" id="alphabank_name" data-counter="400"
-                                   value="{{ setting('payment_Alphabank_name', trans('plugins/payment::payment.pay_online_via', ['name' => 'Alphabank'])) }}">
+                                   name="payment_alphabank_name" id="alphabank_name" data-counter="400"
+                                   value="{{ setting('payment_alphabank_name', trans('plugins/payment::payment.pay_online_via', ['name' => 'Alphabank'])) }}">
                         </div>
                         <div class="form-group mb-3">
                             <label class="text-title-field"
-                                   for="payment_Alphabank_description">{{ trans('core/base::forms.description') }}</label>
-                            <textarea class="next-input" name="payment_Alphabank_description"
-                                      id="payment_Alphabank_description">{{ get_payment_setting('description', 'Alphabank', __('Payment with Alphabank')) }}</textarea>
+                                   for="payment_alphabank_description">{{ trans('core/base::forms.description') }}</label>
+                            <textarea class="next-input" name="payment_alphabank_description"
+                                      id="payment_alphabank_description">{{ get_payment_setting('description', 'alphabank', __('Payment with Alphabank')) }}</textarea>
                         </div>
                         <div class="form-group mb-3">
                             <label class="text-title-field"
-                                   for="payment_Alphabank_description">{{ clean(trans('plugins/alphabank::alphabank.installments')) }}</label>
+                                   for="payment_alphabank_description">{{ clean(trans('plugins/alphabank::alphabank.installments')) }}</label>
                             @php
-                                $payment_Alphabank_installments=setting('payment_Alphabank_installments');
+                                $payment_Alphabank_installments=setting('payment_alphabank_installments');
                             @endphp
-                            <select class="next-input" name="payment_Alphabank_installments"
-                                    id="payment_Alphabank_installments">
+                            <select class="next-input" name="payment_alphabank_installments"
+                                    id="payment_alphabank_installments">
                                 @for($x=0; $x<=36; $x++)
                                     <option
                                         value="{{$x}}" {{$x==$payment_Alphabank_installments?'selected="selected"':''}}>{{$x}}</option>
@@ -94,17 +94,17 @@
                         <div class="form-group mb-3">
                             <label class="text-title-field"
                                    for="alphabank_client_id">{{ clean(trans('plugins/alphabank::alphabank.alphabank_key')) }}</label>
-                            <input type="text" class="next-input" name="payment_Alphabank_client_id"
+                            <input type="text" class="next-input" name="payment_alphabank_client_id"
                                    id="alphabank_client_id" placeholder="0024077786"
-                                   value="{{ app()->environment('demo') ? '*******************************' : setting('payment_Alphabank_client_id') }}">
+                                   value="{{ app()->environment('demo') ? '*******************************' : setting('payment_alphabank_client_id') }}">
                         </div>
                         <div class="form-group mb-3">
                             <label class="text-title-field"
                                    for="alphabank_secret">{{ clean(trans('plugins/alphabank::alphabank.alphabank_secret')) }}</label>
                             <div class="input-option">
                                 <input type="password" class="next-input" id="alphabank_secret"
-                                       name="payment_Alphabank_secret" placeholder="*************"
-                                       value="{{ app()->environment('demo') ? '*******************************' : setting('payment_Alphabank_secret') }}">
+                                       name="payment_alphabank_secret" placeholder="*************"
+                                       value="{{ app()->environment('demo') ? '*******************************' : setting('payment_alphabank_secret') }}">
                             </div>
                         </div>
                         {!! apply_filters(PAYMENT_METHOD_SETTINGS_CONTENT, null, 'Alphabank') !!}

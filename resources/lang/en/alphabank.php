@@ -11,6 +11,7 @@ return [
     'installments' => 'Installments',
     'could_not_get_Alphabank_token' => 'Missing Alphabank Token',
     'alphabank_installments' => 'Maximum number of installments regardless of the total order amount',
+    'use'=>'Use',
 
     //
     ];

@@ -11,14 +11,16 @@ return new class extends Migration {
      */
     public function up()
     {
-        Schema::dropIfExists('installments');
 
-        Schema::create('installments', function (Blueprint $table) {
-            $table->id();
-            $table->int('installments');
-            $table->int('order_id');
-            $table->timestamps();
-        });
+        if (!Schema::hasColumn('ec_orders','installments' )) //check the column
+        {
+            Schema::table('ec_orders', function (Blueprint $table) {
+                $table->addColumn('integer', 'installments')->nullable()->default(0);
+
+
+              });
+            }
+
 
     }
 
@@ -29,6 +31,11 @@ return new class extends Migration {
      */
     public function down()
     {
-        Schema::dropIfExists('installments');
+        if (Schema::hasColumn('ec_orders', 'installments')) //check the column
+        {
+            Schema::table('ec_orders', function (Blueprint $table) {
+                $table->dropColumn('installments'); //drop it
+            });
+        }
     }
 };
